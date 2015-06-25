@@ -2,12 +2,13 @@
     "name": "mixpo/silex-poc",
     "require": {
         "silex/silex": "~1.3",
-        "doctrine/dbal": "~2.2"
+        "doctrine/dbal": "~2.2",
+        "monolog/monolog": "1.14.0"
     },
     "authors": [
         {
             "name": "samkeen",
-            "email": "skeen@mixpo.com"
+            "email": "sam.sjk@gmail.com"
         }
     ]
 }
