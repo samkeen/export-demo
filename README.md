@@ -1,7 +1,10 @@
 # Export Demo
 
-# Install
+# Summary
 
+Spec app for upcoming presentation 
+
+# Install
 
 ```
 $ composer install
