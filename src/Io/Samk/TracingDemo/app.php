@@ -2,14 +2,17 @@
 
 namespace Io\Samk\TracingDemo;
 
+use Doctrine\DBAL\Connection;
 use Io\Samk\Logging\RequestProcessor;
 use Io\Samk\Logging\TracingEventListener;
+use Io\Samk\Utils\JsonUtil;
 use Monolog\Formatter\LineFormatter;
 use Monolog\Handler\StreamHandler;
 use Monolog\Logger;
 use Silex\Application;
 use Silex\Provider\DoctrineServiceProvider;
 use Silex\Provider\MonologServiceProvider;
+use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 
 $topDir = realpath(__DIR__ . '/../../../../');
@@ -67,24 +70,26 @@ $app->register(
     )
 );
 
-function resourceResponse($payload)
+function errorResponse($message, $statusCode)
+{
+    return new Response(
+        json_encode(
+            [
+                "code" => $statusCode,
+                "message" => $message
+            ]
+        ),
+        400,
+        ['Content-Type' => 'application/json']
+    );
+}
+
+function resourceResponse($payload, $statusCode=200)
 {
     $response = new Response();
     $response->headers->set('Content-Type', 'application/json');
-    if ($payload) {
-        $response->setContent(json_encode($payload));
-        $response->setStatusCode(200);
-    } else {
-        $response->setContent(
-            json_encode(
-                [
-                    'statusCode' => 404,
-                    'error' => 'Not Found'
-                ]
-            )
-        );
-        $response->setStatusCode(404);
-    }
+    $response->setContent(json_encode($payload));
+    $response->setStatusCode($statusCode);
 
     return $response;
 }
@@ -106,11 +111,36 @@ $app->get(
 $app->get(
     '/payloads/{payloadId}',
     function ($payloadId) use ($app) {
-        $app['monolog']->addDebug('Testing the Monolog logging.');
         $sql = "SELECT * FROM `payloads` WHERE `id` = ?";
         $payload = $app['db']->fetchAssoc($sql, array((int)$payloadId));
-
+        if (!$payload) {
+            return errorResponse('Not Found', 404);
+        }
+        $app['monolog']->addInfo("Retrieved Payload id={$payloadId}");
         return resourceResponse($payload);
+
+    }
+);
+
+$app->post(
+    '/payloads',
+    function (Request $request) use ($app) {
+        $payloadJsonString = $request->getContent();
+        $sql = "INSERT INTO `payloads` (`payload`, `request_headers`) VALUES (? , ?)";
+        $requestHeadersString = json_encode($request->headers->all());
+        try {
+            $app['monolog']->addInfo('Persisting Payload');
+            $payload = JsonUtil::decode($payloadJsonString);
+            /** @var Connection $conn */
+            $conn = $app['db'];
+            $conn->executeUpdate($sql, array(json_encode($payload), $requestHeadersString));
+        } catch (\InvalidArgumentException $e) {
+            return errorResponse("The request payload was not valid JSON", 400);
+        } catch (\Exception $e) {
+            $app['monolog']->addError($e);
+            return errorResponse("There was a problem persisting your request payload", 500);
+        }
+        return resourceResponse("", 204);
 
     }
 );

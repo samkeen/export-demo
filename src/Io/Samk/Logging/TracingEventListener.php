@@ -85,6 +85,7 @@ class TracingEventListener implements EventSubscriberInterface
      */
     protected function logResponse(Response $response)
     {
+        $response->headers->set('trace-token', TracingRequest::getInstance()->getTraceId());
         if ($response instanceof RedirectResponse) {
             $this->logger->info('< ' . $response->getStatusCode() . ' ' . $response->getTargetUrl());
         } else {
