@@ -36,6 +36,7 @@ class RequestProcessor
     public function __invoke(array $record)
     {
         $record['extra']['token'] = $this->requestTrace->getTraceId();
+        $record['extra']['time'] = microtime(true);
 
         return $record;
     }
