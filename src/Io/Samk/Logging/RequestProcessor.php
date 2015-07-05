@@ -35,6 +35,15 @@ class RequestProcessor
      */
     public function __invoke(array $record)
     {
+        /**
+         * Look for #TRACE#({.*}) in log messages
+         *   if found, record, and clean out of original log message
+         */
+        preg_match('/#TRACE#({.*})/', $record['message'],$match);
+        if($match) {
+            $record['extra'] += json_decode($match[1], true);
+            $record['message'] = trim(preg_replace("/{$match[0]}/", '', $record['message']));
+        }
         $record['extra']['token'] = $this->requestTrace->getTraceId();
         $record['extra']['time'] = microtime(true);
 

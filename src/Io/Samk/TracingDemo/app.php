@@ -112,11 +112,12 @@ $app->get(
     '/payloads/{payloadId}',
     function ($payloadId) use ($app) {
         $sql = "SELECT * FROM `payloads` WHERE `id` = ?";
+        $app['monolog']->addInfo('Attempting retrieval of Payload id={$payloadId} #TRACE#{"bound":"persistence:GET:payload:start"}');
         $payload = $app['db']->fetchAssoc($sql, array((int)$payloadId));
+        $app['monolog']->addInfo('Persisting Payload #TRACE#{"bound":"persistence:GET:payload:finish"}');
         if (!$payload) {
             return errorResponse('Not Found', 404);
         }
-        $app['monolog']->addInfo("Retrieved Payload id={$payloadId}");
         return resourceResponse($payload);
 
     }
@@ -129,11 +130,12 @@ $app->post(
         $sql = "INSERT INTO `payloads` (`payload`, `request_headers`) VALUES (? , ?)";
         $requestHeadersString = json_encode($request->headers->all());
         try {
-            $app['monolog']->addInfo('Persisting Payload');
+            $app['monolog']->addInfo('Persisting Payload #TRACE#{"bound":"persistence:POST:payload:start"}');
             $payload = JsonUtil::decode($payloadJsonString);
             /** @var Connection $conn */
             $conn = $app['db'];
             $conn->executeUpdate($sql, array(json_encode($payload), $requestHeadersString));
+            $app['monolog']->addInfo('#TRACE#{"bound":"persistence:POST:payload:finish"}');
         } catch (\InvalidArgumentException $e) {
             return errorResponse("The request payload was not valid JSON", 400);
         } catch (\Exception $e) {
@@ -142,13 +144,6 @@ $app->post(
         }
         return resourceResponse("", 204);
 
-    }
-);
-
-$app->get(
-    '/hello/{name}',
-    function ($name) use ($app) {
-        return 'Hello ' . $app->escape($name);
     }
 );
 
