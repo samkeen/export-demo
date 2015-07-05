@@ -114,7 +114,7 @@ $app->get(
         $sql = "SELECT * FROM `payloads` WHERE `id` = ?";
         $app['monolog']->addInfo('Attempting retrieval of Payload id={$payloadId} #TRACE#{"bound":"persistence:GET:payload:start"}');
         $payload = $app['db']->fetchAssoc($sql, array((int)$payloadId));
-        $app['monolog']->addInfo('Persisting Payload #TRACE#{"bound":"persistence:GET:payload:finish"}');
+        $app['monolog']->addInfo('retrieval of Payload complete #TRACE#{"bound":"persistence:GET:payload:finish"}');
         if (!$payload) {
             return errorResponse('Not Found', 404);
         }
@@ -135,7 +135,7 @@ $app->post(
             /** @var Connection $conn */
             $conn = $app['db'];
             $conn->executeUpdate($sql, array(json_encode($payload), $requestHeadersString));
-            $app['monolog']->addInfo('#TRACE#{"bound":"persistence:POST:payload:finish"}');
+            $app['monolog']->addInfo('Persisting Payload complete #TRACE#{"bound":"persistence:POST:payload:finish"}');
         } catch (\InvalidArgumentException $e) {
             return errorResponse("The request payload was not valid JSON", 400);
         } catch (\Exception $e) {
