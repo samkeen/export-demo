@@ -75,7 +75,8 @@ class TracingEventListener implements EventSubscriberInterface
      */
     protected function logRequest(Request $request)
     {
-        $this->logger->info("> " . $request->getMethod() . ' ' . $request->getRequestUri());
+        $this->logger->info("> " . $request->getMethod() . ' ' . $request->getRequestUri()
+            . ' #TRACE#{"event":"request.start"}');
     }
 
     /**
@@ -89,7 +90,7 @@ class TracingEventListener implements EventSubscriberInterface
         if ($response instanceof RedirectResponse) {
             $this->logger->info('< ' . $response->getStatusCode() . ' ' . $response->getTargetUrl());
         } else {
-            $this->logger->info('< ' . $response->getStatusCode());
+            $this->logger->info('< ' . $response->getStatusCode() . ' #TRACE#{"event":"response.send"}');
         }
     }
 
