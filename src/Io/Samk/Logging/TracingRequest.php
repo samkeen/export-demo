@@ -15,6 +15,7 @@ class TracingRequest
      * @var string
      */
     private $requestTraceId = '----';
+    private $inboundTraceChain = '';
 
     /**
      * @return TracingRequest
@@ -31,12 +32,30 @@ class TracingRequest
 
     /**
      * Create to trace identifier for this request
-     * @param string $previousTraceId This is intended to be a trace id from the inbound request, if one exists.
+     * @param string $inboundTraceChain This is intended to be a trace id from the inbound request, if one exists.
      */
-    public function init($previousTraceId = '')
+    public function init($inboundTraceChain = '')
     {
-        $previousTraceId = trim($previousTraceId) == '' ? '' : "{$previousTraceId}:";
-        $this->requestTraceId = $previousTraceId . $this->generateTraceToken();
+        $this->inboundTraceChain = $inboundTraceChain;
+        $this->requestTraceId = $this->generateTraceToken();
+    }
+
+    /**
+     * @return string
+     */
+    public function getInboundTraceChain()
+    {
+        return $this->inboundTraceChain;
+    }
+
+    /**
+     * Retrieve the the token string to send with sub-requests from this service.
+     * @return string
+     */
+    public function getTokenForRequest()
+    {
+        $inboundTraceChain = $this->getInboundTraceChain() ? ".{$this->getInboundTraceChain()}" : '';
+        return "{$this->getTraceId()}{$inboundTraceChain}";
     }
 
     /**

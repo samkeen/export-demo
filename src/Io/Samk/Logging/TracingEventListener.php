@@ -36,7 +36,12 @@ class TracingEventListener implements EventSubscriberInterface
      */
     public function onKernelRequest(GetResponseEvent $event)
     {
-        TracingRequest::getInstance()->init();
+        $inboundTraceToken = null;
+        $request = $event->getRequest();
+        if($request->headers->has('trace-token')) {
+            $inboundTraceToken = $request->headers->get('trace-token');
+        }
+        TracingRequest::getInstance()->init($inboundTraceToken);
         if (HttpKernelInterface::MASTER_REQUEST !== $event->getRequestType()) {
             return;
         }

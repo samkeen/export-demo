@@ -45,6 +45,7 @@ class RequestProcessor
             $record['message'] = trim(preg_replace("/{$match[0]}/", '', $record['message']));
         }
         $record['extra']['token'] = $this->requestTrace->getTraceId();
+        $record['extra']['inboundToken'] = $this->requestTrace->getInboundTraceChain();
         $record['extra']['time'] = microtime(true);
 
         return $record;
