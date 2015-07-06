@@ -3,8 +3,10 @@
 namespace Io\Samk\TracingDemo;
 
 use Doctrine\DBAL\Connection;
+use GuzzleHttp\Client;
 use Io\Samk\Logging\RequestProcessor;
 use Io\Samk\Logging\TracingEventListener;
+use Io\Samk\Logging\TracingRequest;
 use Io\Samk\Utils\JsonUtil;
 use Monolog\Formatter\LineFormatter;
 use Monolog\Handler\StreamHandler;
@@ -94,6 +96,25 @@ function resourceResponse($payload, $statusCode = 200)
     return $response;
 }
 
+function postWorkToBackendService($payload, $app)
+{
+    $companion_app_host = null;
+    if ($companion_app_host) {
+        $companion_app_url = "{$companion_app_host}/work";
+        try {
+            $client = new Client();
+            $resp = $client->post($companion_app_url, [
+                'body' => $payload,
+                'headers' => ['trace-token' => TracingRequest::getInstance()->getTraceId()]
+            ]);
+            $app['monolog']->addInfo(
+                "POSTed work to {$companion_app_url}, response: {$resp->getStatusCode()} {$resp->getReasonPhrase()}");
+        } catch(\Exception $e) {
+            $app['monolog']->addError("Problem POSTing work to {$companion_app_url} : {$e}");
+        }
+    }
+}
+
 $app->get(
     '/info',
     function () use ($app) {
@@ -104,7 +125,7 @@ $app->get(
 $app->get(
     '/',
     function () use ($app) {
-        return 'Hello This is a Test App';
+        return 'Hello This is Export Demo Test App';
     }
 );
 
@@ -114,7 +135,7 @@ $app->get(
         $sql = "SELECT * FROM `payloads` WHERE `id` = ?";
         $app['monolog']->addInfo(
             "Attempting retrieval of Payload id={$payloadId}"
-             . '#TRACE#{"event":"boundary.enter:persistence:select:payload"}');
+            . '#TRACE#{"event":"boundary.enter:persistence:select:payload"}');
         $payload = $app['db']->fetchAssoc($sql, array((int)$payloadId));
         if (!$payload) {
             return errorResponse('Not Found', 404);
@@ -136,6 +157,7 @@ $app->post(
             /** @var Connection $conn */
             $conn = $app['db'];
             $conn->executeUpdate($sql, array(json_encode($payload), $requestHeadersString));
+            postWorkToBackendService($payloadJsonString, $app);
         } catch (\InvalidArgumentException $e) {
             return errorResponse("The request payload was not valid JSON", 400);
         } catch (\Exception $e) {
