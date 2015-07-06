@@ -116,8 +116,6 @@ $app->get(
             "Attempting retrieval of Payload id={$payloadId}"
              . '#TRACE#{"event":"boundary.enter:persistence:select:payload"}');
         $payload = $app['db']->fetchAssoc($sql, array((int)$payloadId));
-        $app['monolog']->addInfo(
-            'retrieval of Payload complete #TRACE#{"event":"boundary.return:persistence:select:payload"}');
         if (!$payload) {
             return errorResponse('Not Found', 404);
         }
@@ -138,8 +136,6 @@ $app->post(
             /** @var Connection $conn */
             $conn = $app['db'];
             $conn->executeUpdate($sql, array(json_encode($payload), $requestHeadersString));
-            $app['monolog']->addInfo(
-                'Persisting Payload complete #TRACE#{"event":"boundary.return:persistence:insert:payload"}');
         } catch (\InvalidArgumentException $e) {
             return errorResponse("The request payload was not valid JSON", 400);
         } catch (\Exception $e) {
